@@ -1,0 +1,1593 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FidéliWallet — Portefeuille de Fidélité</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.5/JsBarcode.all.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap');
+
+:root {
+  --bg: #f0ede8;
+  --bg2: #e8e4de;
+  --surface: #faf8f5;
+  --card-bg: #ffffff;
+  --border: #d8d2c8;
+  --border2: #c8c0b4;
+  --text: #1a1612;
+  --text2: #5a5248;
+  --text3: #8a837a;
+  --accent: #c4522a;
+  --accent2: #8b3a1e;
+  --gold: #c9920a;
+  --gold2: #f5c842;
+  --green: #2a7a4e;
+  --blue: #1e4a8b;
+  --purple: #5a2a8b;
+  --shadow: 0 2px 12px rgba(60,40,20,0.08);
+  --shadow-lg: 0 8px 40px rgba(60,40,20,0.15);
+  --radius: 16px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Grain texture */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.5;
+}
+
+/* ============= SCREENS ============= */
+.screen { display: none; position: relative; z-index: 1; }
+.screen.active { display: flex; }
+
+/* ============= LOGIN SCREEN ============= */
+#loginScreen {
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 0;
+  background: linear-gradient(160deg, #1a1612 0%, #2d2520 50%, #1a1612 100%);
+}
+
+.login-deco {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.login-deco::before {
+  content: '';
+  position: absolute;
+  top: -20%;
+  left: -10%;
+  width: 60%;
+  height: 60%;
+  background: radial-gradient(circle, rgba(196,82,42,0.15) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.login-deco::after {
+  content: '';
+  position: absolute;
+  bottom: -20%;
+  right: -10%;
+  width: 50%;
+  height: 50%;
+  background: radial-gradient(circle, rgba(201,146,10,0.1) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.login-box {
+  background: rgba(250,248,245,0.04);
+  border: 1px solid rgba(250,248,245,0.1);
+  border-radius: 24px;
+  padding: 48px 40px;
+  width: 100%;
+  max-width: 420px;
+  backdrop-filter: blur(20px);
+  position: relative;
+  z-index: 2;
+}
+
+.brand {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.brand-icon {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.brand h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #faf8f5;
+  letter-spacing: -0.5px;
+}
+
+.brand p {
+  font-size: 13px;
+  color: rgba(250,248,245,0.5);
+  margin-top: 4px;
+}
+
+.login-tabs {
+  display: flex;
+  gap: 4px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 28px;
+}
+
+.login-tab {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  background: transparent;
+  color: rgba(250,248,245,0.5);
+  border-radius: 7px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.login-tab.active {
+  background: var(--accent);
+  color: white;
+}
+
+.form-group { margin-bottom: 16px; }
+
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(250,248,245,0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 6px;
+}
+
+.form-input {
+  width: 100%;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  color: #faf8f5;
+  padding: 12px 16px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-input:focus { border-color: var(--accent); }
+.form-input::placeholder { color: rgba(250,248,245,0.25); }
+
+.btn-login {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-family: 'Outfit', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: all 0.2s;
+  letter-spacing: 0.3px;
+}
+
+.btn-login:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(196,82,42,0.4); }
+
+.login-error {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: rgba(239,68,68,0.15);
+  border: 1px solid rgba(239,68,68,0.3);
+  border-radius: 8px;
+  color: #fca5a5;
+  font-size: 13px;
+  text-align: center;
+  display: none;
+}
+
+.register-info {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 12px;
+  color: rgba(250,248,245,0.35);
+}
+
+/* ============= MAIN APP ============= */
+#appScreen {
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Top bar */
+.topbar {
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topbar-brand {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+
+.topbar-brand span { color: var(--accent); }
+
+.user-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 12px 4px 4px;
+  font-size: 13px;
+}
+
+.user-avatar {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+}
+
+.admin-badge {
+  font-size: 10px;
+  background: linear-gradient(135deg, var(--gold), var(--gold2));
+  color: var(--text);
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+
+.icon-btn-top {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text2);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  transition: all 0.15s;
+}
+
+.icon-btn-top:hover { background: var(--bg2); border-color: var(--border2); }
+
+/* Nav tabs */
+.navtabs {
+  display: flex;
+  gap: 2px;
+  padding: 12px 24px 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--card-bg);
+}
+
+.navtab {
+  padding: 10px 18px;
+  border: none;
+  background: transparent;
+  color: var(--text3);
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: -1px;
+}
+
+.navtab:hover { color: var(--text); }
+.navtab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* Content */
+.content { padding: 28px 24px; max-width: 1100px; margin: 0 auto; width: 100%; }
+
+/* Section header */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.section-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.section-sub { font-size: 13px; color: var(--text3); margin-top: 2px; }
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: var(--accent2); transform: translateY(-1px); }
+.btn-ghost { background: transparent; color: var(--text2); border: 1px solid var(--border); }
+.btn-ghost:hover { background: var(--bg2); }
+.btn-gold { background: linear-gradient(135deg, var(--gold), var(--gold2)); color: var(--text); }
+.btn-sm { padding: 6px 14px; font-size: 12px; }
+
+/* ============= CARDS GRID ============= */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+/* Loyalty card visual */
+.loyalty-card {
+  border-radius: 18px;
+  padding: 22px 22px 18px;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  min-height: 175px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.loyalty-card:hover {
+  transform: translateY(-3px) scale(1.01);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.2);
+}
+
+.loyalty-card::before {
+  content: '';
+  position: absolute;
+  top: -40%;
+  right: -20%;
+  width: 70%;
+  height: 120%;
+  background: rgba(255,255,255,0.08);
+  border-radius: 50%;
+  transform: rotate(-15deg);
+}
+
+.loyalty-card::after {
+  content: '';
+  position: absolute;
+  bottom: -30%;
+  left: -10%;
+  width: 50%;
+  height: 80%;
+  background: rgba(0,0,0,0.06);
+  border-radius: 50%;
+}
+
+.card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  position: relative;
+  z-index: 1;
+}
+
+.card-store-icon {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  backdrop-filter: blur(8px);
+}
+
+.card-menu-btn {
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+
+.card-menu-btn:hover { background: rgba(255,255,255,0.25); }
+
+.card-mid { position: relative; z-index: 1; }
+
+.card-store-name {
+  font-size: 17px;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  margin-bottom: 2px;
+}
+
+.card-type-tag {
+  font-size: 10px;
+  background: rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.9);
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.card-bottom {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.card-number {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: rgba(255,255,255,0.8);
+  letter-spacing: 1px;
+}
+
+.card-points-badge {
+  background: rgba(255,255,255,0.2);
+  backdrop-filter: blur(8px);
+  border-radius: 10px;
+  padding: 6px 12px;
+  text-align: right;
+}
+
+.card-points-val {
+  font-size: 18px;
+  font-weight: 800;
+  color: white;
+  display: block;
+  line-height: 1;
+}
+
+.card-points-lbl {
+  font-size: 9px;
+  color: rgba(255,255,255,0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 64px 24px;
+  color: var(--text3);
+  grid-column: 1/-1;
+}
+
+.empty-icon { font-size: 56px; margin-bottom: 16px; opacity: 0.4; }
+.empty-title { font-size: 18px; font-weight: 600; color: var(--text2); margin-bottom: 6px; }
+.empty-sub { font-size: 14px; }
+
+/* ============= CARD DETAIL MODAL ============= */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20,15,10,0.6);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+}
+
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--card-bg);
+  border-radius: 24px;
+  width: 100%;
+  max-width: 460px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+  animation: modalIn 0.25s ease;
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal-header {
+  padding: 20px 24px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-title { font-size: 18px; font-weight: 700; }
+
+.modal-close {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text3);
+  transition: all 0.15s;
+}
+
+.modal-close:hover { background: var(--bg2); }
+
+.modal-body { padding: 20px 24px 24px; }
+
+/* Barcode area */
+.barcode-container {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+  margin: 16px 0;
+  border: 1px solid var(--border);
+}
+
+.barcode-container svg { max-width: 100%; }
+.barcode-number {
+  font-family: 'DM Mono', monospace;
+  font-size: 14px;
+  color: var(--text2);
+  margin-top: 8px;
+  letter-spacing: 2px;
+}
+
+/* Stats row */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin: 16px 0;
+}
+
+.stat-box {
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 14px;
+  text-align: center;
+}
+
+.stat-val { font-size: 20px; font-weight: 800; color: var(--accent); }
+.stat-lbl { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+/* ============= ADD CARD MODAL ============= */
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+.form-row-1 { margin-bottom: 14px; }
+
+.field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 5px;
+  display: block;
+}
+
+.field-input, .field-select {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  padding: 10px 14px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.field-input:focus, .field-select:focus { border-color: var(--accent); }
+
+/* Color picker row */
+.color-picker-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.color-swatch {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.15s;
+  position: relative;
+}
+
+.color-swatch.selected {
+  border-color: var(--text);
+  transform: scale(1.15);
+}
+
+.color-swatch::after {
+  content: '✓';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: white;
+  opacity: 0;
+}
+
+.color-swatch.selected::after { opacity: 1; }
+
+/* ============= ADMIN PANEL ============= */
+.admin-header {
+  background: linear-gradient(135deg, #1a1612, #2d2520);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: white;
+}
+
+.admin-crown { font-size: 36px; }
+.admin-title { font-size: 20px; font-weight: 700; }
+.admin-sub { font-size: 13px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+
+.clients-table {
+  background: var(--card-bg);
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.table-head {
+  display: grid;
+  grid-template-columns: 1fr 1fr 80px 100px 120px;
+  padding: 12px 20px;
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  gap: 12px;
+}
+
+.table-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 80px 100px 120px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+  gap: 12px;
+  transition: background 0.15s;
+  font-size: 14px;
+}
+
+.table-row:last-child { border-bottom: none; }
+.table-row:hover { background: var(--bg); }
+
+.user-row-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+}
+
+.mini-avatar {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  color: white;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.status-pill {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+
+.status-active { background: rgba(42,122,78,0.12); color: var(--green); }
+
+.btn-view-client {
+  padding: 5px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: transparent;
+  font-family: 'Outfit', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text2);
+  transition: all 0.15s;
+  display: flex; align-items: center; gap: 5px;
+}
+
+.btn-view-client:hover { background: var(--accent); color: white; border-color: var(--accent); }
+
+/* Toast */
+.toasts {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.toast {
+  background: var(--text);
+  color: var(--surface);
+  border-radius: 12px;
+  padding: 12px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  animation: toastIn 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  max-width: 300px;
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Tab pages */
+.tab-page { display: none; }
+.tab-page.active { display: block; }
+
+/* Card detail in admin */
+.client-cards-preview {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.client-card-mini {
+  border-radius: 12px;
+  padding: 14px;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+.divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+.points-display {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.points-big {
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.points-info { font-size: 13px; color: var(--text3); line-height: 1.5; }
+
+.action-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+
+.tag-store { background: rgba(30,74,139,0.1); color: var(--blue); }
+.tag-resto { background: rgba(196,82,42,0.1); color: var(--accent); }
+.tag-sport { background: rgba(42,122,78,0.1); color: var(--green); }
+.tag-mode { background: rgba(90,42,139,0.1); color: var(--purple); }
+.tag-autre { background: rgba(90,83,122,0.1); color: var(--text2); }
+
+/* Gradient cards palette */
+.grad-0 { background: linear-gradient(135deg, #1a1612, #3d2b1a); }
+.grad-1 { background: linear-gradient(135deg, #1e4a8b, #0f2d5c); }
+.grad-2 { background: linear-gradient(135deg, #2a7a4e, #155230); }
+.grad-3 { background: linear-gradient(135deg, #c4522a, #7a2c10); }
+.grad-4 { background: linear-gradient(135deg, #5a2a8b, #2d1050); }
+.grad-5 { background: linear-gradient(135deg, #c9920a, #7a5500); }
+.grad-6 { background: linear-gradient(135deg, #1a5c6b, #0a303a); }
+.grad-7 { background: linear-gradient(135deg, #6b1a1a, #3a0808); }
+.grad-8 { background: linear-gradient(135deg, #2d4a1a, #162508); }
+</style>
+</head>
+<body>
+
+<!-- ========= LOGIN SCREEN ========= -->
+<div id="loginScreen" class="screen active">
+  <div class="login-deco"></div>
+  <div class="login-box">
+    <div class="brand">
+      <span class="brand-icon">💳</span>
+      <h1>FidéliWallet</h1>
+      <p>Votre portefeuille de fidélité numérique</p>
+    </div>
+
+    <div class="login-tabs">
+      <button class="login-tab active" onclick="switchLoginTab('login')">Connexion</button>
+      <button class="login-tab" onclick="switchLoginTab('register')">Créer un compte</button>
+    </div>
+
+    <!-- Login form -->
+    <div id="loginForm">
+      <div class="form-group">
+        <label class="form-label">Nom d'utilisateur</label>
+        <input class="form-input" id="loginUser" placeholder="votre_pseudo" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Code d'accès</label>
+        <input class="form-input" id="loginPass" type="password" placeholder="••••••" autocomplete="off">
+      </div>
+      <button class="btn-login" onclick="doLogin()">→ Accéder à mon portefeuille</button>
+    </div>
+
+    <!-- Register form -->
+    <div id="registerForm" style="display:none">
+      <div class="form-group">
+        <label class="form-label">Nom d'utilisateur</label>
+        <input class="form-input" id="regUser" placeholder="choisissez un pseudo" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Code d'accès (min. 4 caractères)</label>
+        <input class="form-input" id="regPass" type="password" placeholder="••••••" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirmer le code</label>
+        <input class="form-input" id="regPass2" type="password" placeholder="••••••" autocomplete="off">
+      </div>
+      <button class="btn-login" onclick="doRegister()">✓ Créer mon compte</button>
+    </div>
+
+    <div class="login-error" id="loginError"></div>
+    <p class="register-info">Données stockées localement • Aucune donnée bancaire</p>
+  </div>
+</div>
+
+<!-- ========= APP SCREEN ========= -->
+<div id="appScreen" class="screen">
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-brand">Fidéli<span>Wallet</span></div>
+    </div>
+    <div class="topbar-right">
+      <div class="user-badge">
+        <div class="user-avatar" id="topAvatar"></div>
+        <span id="topUsername" style="font-weight:600;font-size:13px"></span>
+        <span class="admin-badge" id="adminBadge" style="display:none">ADMIN</span>
+      </div>
+      <button class="icon-btn-top" onclick="doLogout()" title="Déconnexion">🚪</button>
+    </div>
+  </div>
+
+  <!-- Nav -->
+  <div class="navtabs" id="navtabs">
+    <button class="navtab active" onclick="switchTab('wallet')" id="nt-wallet">💳 Mon Portefeuille</button>
+    <button class="navtab" onclick="switchTab('stats')" id="nt-stats">📊 Statistiques</button>
+    <button class="navtab" onclick="switchTab('admin')" id="nt-admin" style="display:none">👑 Administration</button>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- WALLET TAB -->
+    <div class="tab-page active" id="page-wallet">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Mes Cartes</div>
+          <div class="section-sub" id="walletSub">Chargement...</div>
+        </div>
+        <button class="btn btn-primary" onclick="openAddCard()">+ Ajouter une carte</button>
+      </div>
+      <div class="cards-grid" id="cardsGrid"></div>
+    </div>
+
+    <!-- STATS TAB -->
+    <div class="tab-page" id="page-stats">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Statistiques</div>
+          <div class="section-sub">Aperçu de votre fidélité</div>
+        </div>
+      </div>
+      <div id="statsContent"></div>
+    </div>
+
+    <!-- ADMIN TAB -->
+    <div class="tab-page" id="page-admin">
+      <div class="admin-header">
+        <div class="admin-crown">👑</div>
+        <div>
+          <div class="admin-title">Panel Administrateur</div>
+          <div class="admin-sub">Gestion de tous les comptes clients • Treza670</div>
+        </div>
+      </div>
+      <div id="adminContent"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ========= MODALS ========= -->
+
+<!-- Add Card Modal -->
+<div class="modal-overlay" id="addCardModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Ajouter une carte</div>
+      <button class="modal-close" onclick="closeModal('addCardModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div>
+          <label class="field-label">Enseigne / Magasin *</label>
+          <input class="field-input" id="f-store" placeholder="Carrefour, Decathlon...">
+        </div>
+        <div>
+          <label class="field-label">Type de carte</label>
+          <select class="field-select" id="f-type">
+            <option value="store">🏪 Fidélité magasin</option>
+            <option value="resto">🍽️ Restaurant</option>
+            <option value="sport">🏋️ Sport / Loisirs</option>
+            <option value="mode">👗 Mode / Beauté</option>
+            <option value="autre">📦 Autre</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div>
+          <label class="field-label">Numéro membre *</label>
+          <input class="field-input" id="f-number" placeholder="Ex: 1234 5678 9012">
+        </div>
+        <div>
+          <label class="field-label">Points actuels</label>
+          <input class="field-input" id="f-points" type="number" placeholder="0" value="0">
+        </div>
+      </div>
+      <div class="form-row-1">
+        <label class="field-label">Nom du titulaire</label>
+        <input class="field-input" id="f-holder" placeholder="Votre nom">
+      </div>
+      <div class="form-row-1">
+        <label class="field-label">Date d'expiration</label>
+        <input class="field-input" id="f-expiry" placeholder="MM/AAAA">
+      </div>
+      <div class="form-row-1">
+        <label class="field-label">Icône (emoji)</label>
+        <input class="field-input" id="f-icon" placeholder="🛒" maxlength="2" style="font-size:20px;width:80px">
+      </div>
+      <div class="form-row-1">
+        <label class="field-label">Couleur de la carte</label>
+        <div class="color-picker-row" id="colorPicker"></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:20px">
+        <button class="btn btn-ghost" onclick="closeModal('addCardModal')" style="flex:1">Annuler</button>
+        <button class="btn btn-primary" onclick="saveCard()" style="flex:2">💳 Enregistrer la carte</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Card Detail Modal -->
+<div class="modal-overlay" id="cardDetailModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="detailTitle">Détail carte</div>
+      <button class="modal-close" onclick="closeModal('cardDetailModal')">✕</button>
+    </div>
+    <div class="modal-body" id="detailBody"></div>
+  </div>
+</div>
+
+<!-- Admin Client Modal -->
+<div class="modal-overlay" id="adminClientModal">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <div class="modal-title" id="adminClientTitle">Compte client</div>
+      <button class="modal-close" onclick="closeModal('adminClientModal')">✕</button>
+    </div>
+    <div class="modal-body" id="adminClientBody"></div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+// ======= STATE =======
+const STORE_KEY = 'fideliwallet-data';
+let db = { users: {}, cards: {} };
+let currentUser = null;
+let selectedColor = 0;
+let editingCardId = null;
+let viewingUserId = null;
+
+const COLORS = [
+  { name: 'Noir', cls: 'grad-0' },
+  { name: 'Bleu', cls: 'grad-1' },
+  { name: 'Vert', cls: 'grad-2' },
+  { name: 'Orange', cls: 'grad-3' },
+  { name: 'Violet', cls: 'grad-4' },
+  { name: 'Or', cls: 'grad-5' },
+  { name: 'Teal', cls: 'grad-6' },
+  { name: 'Rouge', cls: 'grad-7' },
+  { name: 'Olive', cls: 'grad-8' },
+];
+
+const CARD_TYPE_TAGS = {
+  store: { label: 'Magasin', cls: 'tag-store' },
+  resto: { label: 'Restaurant', cls: 'tag-resto' },
+  sport: { label: 'Sport', cls: 'tag-sport' },
+  mode: { label: 'Mode', cls: 'tag-mode' },
+  autre: { label: 'Autre', cls: 'tag-autre' },
+};
+
+const TYPE_ICONS = {
+  store: '🏪', resto: '🍽️', sport: '🏋️', mode: '👗', autre: '📦'
+};
+
+// ======= STORAGE =======
+async function dbLoad() {
+  try {
+    const r = await window.storage.get(STORE_KEY, true);
+    if (r && r.value) db = JSON.parse(r.value);
+    // Ensure admin exists
+    if (!db.users['Treza670']) {
+      db.users['Treza670'] = { pass: 'Treza670', name: 'Treza670', isAdmin: true, createdAt: new Date().toISOString() };
+      await dbSave();
+    }
+  } catch(e) {
+    if (!db.users['Treza670']) {
+      db.users['Treza670'] = { pass: 'Treza670', name: 'Treza670', isAdmin: true, createdAt: new Date().toISOString() };
+    }
+  }
+}
+
+async function dbSave() {
+  try { await window.storage.set(STORE_KEY, JSON.stringify(db), true); }
+  catch(e) { console.error(e); }
+}
+
+// ======= AUTH =======
+function switchLoginTab(t) {
+  document.querySelectorAll('.login-tab').forEach((b, i) => b.classList.toggle('active', (i===0&&t==='login')||(i===1&&t==='register')));
+  document.getElementById('loginForm').style.display = t === 'login' ? 'block' : 'none';
+  document.getElementById('registerForm').style.display = t === 'register' ? 'block' : 'none';
+  document.getElementById('loginError').style.display = 'none';
+}
+
+function showError(msg) {
+  const el = document.getElementById('loginError');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+async function doLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  await dbLoad();
+  const user = db.users[u];
+  if (!user || user.pass !== p) { showError('❌ Identifiants incorrects'); return; }
+  currentUser = u;
+  launchApp();
+}
+
+async function doRegister() {
+  const u = document.getElementById('regUser').value.trim();
+  const p = document.getElementById('regPass').value;
+  const p2 = document.getElementById('regPass2').value;
+  if (!u || u.length < 2) { showError('❌ Pseudo trop court (min. 2 caractères)'); return; }
+  if (p.length < 4) { showError('❌ Code trop court (min. 4 caractères)'); return; }
+  if (p !== p2) { showError('❌ Les codes ne correspondent pas'); return; }
+  await dbLoad();
+  if (db.users[u]) { showError('❌ Ce pseudo est déjà utilisé'); return; }
+  db.users[u] = { pass: p, name: u, isAdmin: false, createdAt: new Date().toISOString() };
+  if (!db.cards[u]) db.cards[u] = [];
+  await dbSave();
+  currentUser = u;
+  launchApp();
+}
+
+function doLogout() {
+  currentUser = null;
+  document.getElementById('appScreen').classList.remove('active');
+  document.getElementById('loginScreen').classList.add('active');
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+  document.getElementById('loginError').style.display = 'none';
+}
+
+function launchApp() {
+  document.getElementById('loginScreen').classList.remove('active');
+  document.getElementById('appScreen').classList.add('active');
+  const user = db.users[currentUser];
+  const isAdmin = user.isAdmin;
+  const colors = ['#c4522a','#1e4a8b','#2a7a4e','#5a2a8b','#c9920a','#1a5c6b'];
+  const col = colors[Math.abs(hashStr(currentUser)) % colors.length];
+  document.getElementById('topAvatar').style.background = col;
+  document.getElementById('topAvatar').textContent = currentUser[0].toUpperCase();
+  document.getElementById('topUsername').textContent = currentUser;
+  document.getElementById('adminBadge').style.display = isAdmin ? 'inline-flex' : 'none';
+  document.getElementById('nt-admin').style.display = isAdmin ? 'flex' : 'none';
+  if (!db.cards[currentUser]) db.cards[currentUser] = [];
+  initColorPicker();
+  switchTab('wallet');
+  renderWallet();
+}
+
+function hashStr(s) { let h=0; for(let i=0;i<s.length;i++) h=Math.imul(31,h)+s.charCodeAt(i)|0; return h; }
+
+// ======= TABS =======
+function switchTab(t) {
+  document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.navtab').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + t).classList.add('active');
+  document.getElementById('nt-' + t).classList.add('active');
+  if (t === 'wallet') renderWallet();
+  if (t === 'stats') renderStats();
+  if (t === 'admin') renderAdmin();
+}
+
+// ======= WALLET =======
+function renderWallet(uid) {
+  const targetUser = uid || currentUser;
+  const cards = db.cards[targetUser] || [];
+  const sub = cards.length === 0 ? 'Aucune carte enregistrée' : `${cards.length} carte${cards.length>1?'s':''} • ${cards.reduce((s,c)=>s+(c.points||0),0).toLocaleString()} points au total`;
+  document.getElementById('walletSub').textContent = sub;
+  const grid = document.getElementById('cardsGrid');
+  if (cards.length === 0) {
+    grid.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">💳</div>
+      <div class="empty-title">Aucune carte pour l'instant</div>
+      <div class="empty-sub">Ajoutez vos premières cartes de fidélité</div>
+    </div>`;
+    return;
+  }
+  grid.innerHTML = cards.map(c => renderCardHTML(c, targetUser)).join('');
+}
+
+function renderCardHTML(c, uid) {
+  const tag = CARD_TYPE_TAGS[c.type] || CARD_TYPE_TAGS['autre'];
+  return `<div class="loyalty-card ${COLORS[c.color||0].cls}" onclick="openCardDetail('${c.id}','${uid}')">
+    <div class="card-top">
+      <div class="card-store-icon">${c.icon || TYPE_ICONS[c.type] || '💳'}</div>
+    </div>
+    <div class="card-mid">
+      <div class="card-store-name">${esc(c.store)}</div>
+      <span class="card-type-tag">${tag.label}</span>
+    </div>
+    <div class="card-bottom">
+      <div>
+        <div class="card-number">${formatCardNum(c.number)}</div>
+        ${c.holder ? `<div style="font-size:10px;color:rgba(255,255,255,0.6);margin-top:2px">${esc(c.holder)}</div>` : ''}
+      </div>
+      <div class="card-points-badge">
+        <span class="card-points-val">${(c.points||0).toLocaleString()}</span>
+        <span class="card-points-lbl">points</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+function formatCardNum(n) {
+  if (!n) return '•••• •••• ••••';
+  return n.replace(/(.{4})/g,'$1 ').trim();
+}
+
+// ======= CARD DETAIL =======
+function openCardDetail(id, uid) {
+  const cards = db.cards[uid] || [];
+  const c = cards.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('detailTitle').textContent = c.store;
+  const tag = CARD_TYPE_TAGS[c.type] || CARD_TYPE_TAGS['autre'];
+  const isOwner = uid === currentUser || db.users[currentUser]?.isAdmin;
+  document.getElementById('detailBody').innerHTML = `
+    <div class="loyalty-card ${COLORS[c.color||0].cls}" style="margin-bottom:16px;cursor:default">
+      <div class="card-top">
+        <div class="card-store-icon">${c.icon||TYPE_ICONS[c.type]||'💳'}</div>
+      </div>
+      <div class="card-mid">
+        <div class="card-store-name">${esc(c.store)}</div>
+        <span class="card-type-tag">${tag.label}</span>
+      </div>
+      <div class="card-bottom">
+        <div>
+          <div class="card-number">${formatCardNum(c.number)}</div>
+          ${c.holder?`<div style="font-size:10px;color:rgba(255,255,255,0.6);margin-top:2px">${esc(c.holder)}</div>`:''}
+        </div>
+        <div class="card-points-badge">
+          <span class="card-points-val">${(c.points||0).toLocaleString()}</span>
+          <span class="card-points-lbl">points</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="barcode-container">
+      <svg id="barcodesvg"></svg>
+      <div class="barcode-number">${c.number || '000000000000'}</div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="stat-val">${(c.points||0).toLocaleString()}</div>
+        <div class="stat-lbl">Points</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val">${c.expiry||'—'}</div>
+        <div class="stat-lbl">Expiration</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val">${tag.label}</div>
+        <div class="stat-lbl">Type</div>
+      </div>
+    </div>
+
+    ${isOwner ? `
+    <div class="divider"></div>
+    <div style="margin-bottom:10px">
+      <label class="field-label">Mettre à jour les points</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input class="field-input" id="updatePoints" type="number" value="${c.points||0}" style="width:120px">
+        <button class="btn btn-primary btn-sm" onclick="updateCardPoints('${id}','${uid}')">Enregistrer</button>
+      </div>
+    </div>
+    <div class="action-row">
+      <button class="btn btn-ghost btn-sm" onclick="deleteCard('${id}','${uid}')">🗑️ Supprimer</button>
+    </div>` : ''}
+  `;
+  openModal('cardDetailModal');
+  // Generate barcode
+  setTimeout(() => {
+    try {
+      JsBarcode('#barcodesvg', c.number || '000000000000', {
+        format: 'CODE128', width: 1.8, height: 60,
+        displayValue: false, background: 'transparent'
+      });
+    } catch(e) {}
+  }, 50);
+}
+
+async function updateCardPoints(id, uid) {
+  const val = parseInt(document.getElementById('updatePoints').value) || 0;
+  const cards = db.cards[uid];
+  const c = cards.find(x => x.id === id);
+  if (c) { c.points = val; await dbSave(); }
+  closeModal('cardDetailModal');
+  renderWallet(uid === currentUser ? null : uid);
+  toast('✅ Points mis à jour');
+}
+
+async function deleteCard(id, uid) {
+  if (!confirm('Supprimer cette carte ?')) return;
+  db.cards[uid] = (db.cards[uid] || []).filter(x => x.id !== id);
+  await dbSave();
+  closeModal('cardDetailModal');
+  renderWallet(uid === currentUser ? null : uid);
+  toast('🗑️ Carte supprimée');
+}
+
+// ======= ADD CARD =======
+function initColorPicker() {
+  const cp = document.getElementById('colorPicker');
+  const gradBgs = ['#1a1612','#1e4a8b','#2a7a4e','#c4522a','#5a2a8b','#c9920a','#1a5c6b','#6b1a1a','#2d4a1a'];
+  cp.innerHTML = gradBgs.map((bg,i) =>
+    `<div class="color-swatch ${i===0?'selected':''}" style="background:${bg}" onclick="pickColor(${i})" data-i="${i}"></div>`
+  ).join('');
+  selectedColor = 0;
+}
+
+function pickColor(i) {
+  document.querySelectorAll('.color-swatch').forEach(s => s.classList.toggle('selected', parseInt(s.dataset.i)===i));
+  selectedColor = i;
+}
+
+function openAddCard() {
+  editingCardId = null;
+  document.getElementById('f-store').value = '';
+  document.getElementById('f-number').value = '';
+  document.getElementById('f-points').value = '0';
+  document.getElementById('f-holder').value = '';
+  document.getElementById('f-expiry').value = '';
+  document.getElementById('f-icon').value = '';
+  document.getElementById('f-type').value = 'store';
+  pickColor(0);
+  openModal('addCardModal');
+}
+
+async function saveCard() {
+  const store = document.getElementById('f-store').value.trim();
+  const number = document.getElementById('f-number').value.trim();
+  if (!store) { toast('⚠️ Nom de l\'enseigne requis'); return; }
+  if (!number) { toast('⚠️ Numéro membre requis'); return; }
+  const uid = viewingUserId || currentUser;
+  const card = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2),
+    store,
+    number: number.replace(/\s/g,''),
+    points: parseInt(document.getElementById('f-points').value)||0,
+    holder: document.getElementById('f-holder').value.trim(),
+    expiry: document.getElementById('f-expiry').value.trim(),
+    icon: document.getElementById('f-icon').value.trim() || TYPE_ICONS[document.getElementById('f-type').value] || '💳',
+    type: document.getElementById('f-type').value,
+    color: selectedColor,
+    addedAt: new Date().toISOString(),
+  };
+  if (!db.cards[uid]) db.cards[uid] = [];
+  db.cards[uid].unshift(card);
+  await dbSave();
+  closeModal('addCardModal');
+  renderWallet(uid === currentUser ? null : uid);
+  toast('💳 Carte ajoutée !');
+}
+
+// ======= STATS =======
+function renderStats() {
+  const cards = db.cards[currentUser] || [];
+  const total = cards.reduce((s,c) => s+(c.points||0), 0);
+  const byType = {};
+  cards.forEach(c => { byType[c.type] = (byType[c.type]||0)+1; });
+  const topCard = cards.slice().sort((a,b)=>(b.points||0)-(a.points||0))[0];
+
+  document.getElementById('statsContent').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:28px">
+      <div class="stat-box" style="background:var(--card-bg);border:1px solid var(--border);border-radius:14px;padding:20px;text-align:center">
+        <div style="font-size:32px;margin-bottom:8px">💳</div>
+        <div style="font-size:28px;font-weight:800;color:var(--accent)">${cards.length}</div>
+        <div style="font-size:13px;color:var(--text3)">Cartes enregistrées</div>
+      </div>
+      <div class="stat-box" style="background:var(--card-bg);border:1px solid var(--border);border-radius:14px;padding:20px;text-align:center">
+        <div style="font-size:32px;margin-bottom:8px">⭐</div>
+        <div style="font-size:28px;font-weight:800;color:var(--gold)">${total.toLocaleString()}</div>
+        <div style="font-size:13px;color:var(--text3)">Points totaux</div>
+      </div>
+      <div class="stat-box" style="background:var(--card-bg);border:1px solid var(--border);border-radius:14px;padding:20px;text-align:center">
+        <div style="font-size:32px;margin-bottom:8px">🏆</div>
+        <div style="font-size:18px;font-weight:800;color:var(--green)">${topCard ? topCard.store : '—'}</div>
+        <div style="font-size:13px;color:var(--text3)">Carte principale</div>
+      </div>
+    </div>
+
+    <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:14px;padding:20px">
+      <div style="font-size:15px;font-weight:700;margin-bottom:16px">Répartition par type</div>
+      ${Object.entries(CARD_TYPE_TAGS).map(([type, info]) => {
+        const count = byType[type]||0;
+        const pct = cards.length > 0 ? Math.round(count/cards.length*100) : 0;
+        return `<div style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+            <span>${TYPE_ICONS[type]} ${info.label}</span>
+            <span style="color:var(--text3)">${count} carte${count>1?'s':''}</span>
+          </div>
+          <div style="height:8px;background:var(--bg2);border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:var(--accent);border-radius:4px;transition:width 0.5s"></div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+// ======= ADMIN =======
+function renderAdmin() {
+  if (!db.users[currentUser]?.isAdmin) return;
+  const clients = Object.entries(db.users).filter(([u]) => u !== currentUser);
+  const totalCards = Object.values(db.cards).flat().length;
+  const totalPoints = Object.values(db.cards).flat().reduce((s,c) => s+(c.points||0), 0);
+
+  let html = `
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px">
+      ${[
+        ['👥', Object.keys(db.users).length, 'Comptes'],
+        ['💳', totalCards, 'Cartes totales'],
+        ['⭐', totalPoints.toLocaleString(), 'Points cumulés'],
+        ['🟢', clients.length, 'Clients'],
+      ].map(([icon,val,lbl]) => `
+        <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center">
+          <div style="font-size:24px;margin-bottom:6px">${icon}</div>
+          <div style="font-size:22px;font-weight:800;color:var(--accent)">${val}</div>
+          <div style="font-size:12px;color:var(--text3)">${lbl}</div>
+        </div>`).join('')}
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="font-size:16px;font-weight:700">Tous les clients</div>
+    </div>
+
+    <div class="clients-table">
+      <div class="table-head">
+        <span>Utilisateur</span>
+        <span>Membre depuis</span>
+        <span>Cartes</span>
+        <span>Points</span>
+        <span>Actions</span>
+      </div>
+  `;
+
+  const allUsers = Object.entries(db.users);
+  if (allUsers.length === 0) {
+    html += `<div style="padding:32px;text-align:center;color:var(--text3)">Aucun client enregistré</div>`;
+  } else {
+    const rowColors = ['#c4522a','#1e4a8b','#2a7a4e','#5a2a8b','#c9920a','#1a5c6b'];
+    html += allUsers.map(([uid, u]) => {
+      const cards = db.cards[uid] || [];
+      const pts = cards.reduce((s,c) => s+(c.points||0), 0);
+      const col = rowColors[Math.abs(hashStr(uid)) % rowColors.length];
+      const date = u.createdAt ? new Date(u.createdAt).toLocaleDateString('fr-FR') : '—';
+      return `<div class="table-row">
+        <div class="user-row-name">
+          <div class="mini-avatar" style="background:${col}">${uid[0].toUpperCase()}</div>
+          <div>
+            <div style="font-weight:600">${esc(uid)}</div>
+            ${u.isAdmin ? '<div style="font-size:10px;color:var(--gold)">👑 Admin</div>' : ''}
+          </div>
+        </div>
+        <div style="font-size:13px;color:var(--text3)">${date}</div>
+        <div><span class="status-pill status-active">${cards.length} carte${cards.length>1?'s':''}</span></div>
+        <div style="font-weight:600">${pts.toLocaleString()}</div>
+        <div><button class="btn-view-client" onclick="openAdminClient('${uid}')">👁 Voir</button></div>
+      </div>`;
+    }).join('');
+  }
+
+  html += `</div>`;
+  document.getElementById('adminContent').innerHTML = html;
+}
+
+function openAdminClient(uid) {
+  viewingUserId = uid;
+  const user = db.users[uid];
+  const cards = db.cards[uid] || [];
+  document.getElementById('adminClientTitle').textContent = `Compte : ${uid}`;
+  const pts = cards.reduce((s,c)=>s+(c.points||0),0);
+  document.getElementById('adminClientBody').innerHTML = `
+    <div style="display:flex;gap:12px;margin-bottom:16px">
+      <div class="stat-box" style="background:var(--bg);border-radius:10px;padding:12px 16px;flex:1;text-align:center">
+        <div style="font-size:20px;font-weight:800;color:var(--accent)">${cards.length}</div>
+        <div style="font-size:11px;color:var(--text3)">Cartes</div>
+      </div>
+      <div class="stat-box" style="background:var(--bg);border-radius:10px;padding:12px 16px;flex:1;text-align:center">
+        <div style="font-size:20px;font-weight:800;color:var(--gold)">${pts.toLocaleString()}</div>
+        <div style="font-size:11px;color:var(--text3)">Points</div>
+      </div>
+    </div>
+    <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--text2)">Cartes enregistrées</div>
+    <div class="client-cards-preview">
+      ${cards.length === 0 ? '<div style="color:var(--text3);font-size:13px;padding:12px 0">Aucune carte</div>' :
+        cards.map(c => `
+          <div class="client-card-mini ${COLORS[c.color||0].cls}" onclick="openCardDetail('${c.id}','${uid}')">
+            <span style="font-size:22px">${c.icon||'💳'}</span>
+            <div>
+              <div style="font-weight:700;font-size:13px">${esc(c.store)}</div>
+              <div style="font-size:11px;opacity:0.7">${(c.points||0).toLocaleString()} pts</div>
+            </div>
+          </div>`).join('')}
+    </div>
+    <div class="divider"></div>
+    <button class="btn btn-primary btn-sm" onclick="closeModal('adminClientModal');openAddCard()">+ Ajouter une carte pour ce client</button>
+  `;
+  openModal('adminClientModal');
+}
+
+// ======= MODALS =======
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  if (id === 'adminClientModal') viewingUserId = null;
+}
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if(e.target===m) closeModal(m.id); });
+});
+
+// ======= TOAST =======
+function toast(msg, dur=3000) {
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  document.getElementById('toasts').appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transition='opacity 0.3s'; setTimeout(()=>t.remove(),300); }, dur);
+}
+
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ======= INIT =======
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.querySelectorAll('.modal-overlay.open').forEach(m => closeModal(m.id));
+  if (e.key === 'Enter' && document.getElementById('loginScreen').classList.contains('active')) {
+    if (document.getElementById('loginForm').style.display !== 'none') doLogin();
+  }
+});
+
+dbLoad();
+</script>
+</body>
+</html>
